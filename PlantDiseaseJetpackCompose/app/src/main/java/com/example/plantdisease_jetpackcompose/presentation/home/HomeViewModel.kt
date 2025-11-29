@@ -17,8 +17,6 @@ import kotlinx.coroutines.launch
 import java.io.IOException
 import javax.inject.Inject
 
-
-
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -33,6 +31,24 @@ class HomeViewModel @Inject constructor(
             is HomeUiEvent.ImageSelected -> handleImageSelection(event.uri)
             is HomeUiEvent.ImageCaptured -> handleImageSelection(event.uri)
             is HomeUiEvent.ClearError -> _uiState.update { it.copy(error = null) }
+            is HomeUiEvent.Reset -> resetState()
+        }
+    }
+
+    private fun resetState() {
+        // Clear the current image and recycle bitmap to free memory
+        _uiState.value.selectedImage?.recycle()
+
+        // Reset to initial state
+        _uiState.update {
+            HomeUiState(
+                selectedImage = null,
+                imageUri = null,
+                predictionResult = "",
+                isLoading = false,
+                error = null,
+                allPredictions = emptyMap()
+            )
         }
     }
 
@@ -41,10 +57,7 @@ class HomeViewModel @Inject constructor(
             _uiState.update { it.copy(isLoading = true, error = null) }
 
             try {
-                val bitmap = decodeSampledBitmapFromUri(uri,
-                    224, //200,
-                    224 //200
-                )
+                val bitmap = decodeSampledBitmapFromUri(uri, 224, 224)
                 _uiState.update { it.copy(selectedImage = bitmap, imageUri = uri) }
 
                 classifyImage(bitmap)
@@ -122,5 +135,11 @@ class HomeViewModel @Inject constructor(
             }
         }
         return inSampleSize
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        // Clean up bitmap when ViewModel is destroyed
+        _uiState.value.selectedImage?.recycle()
     }
 }

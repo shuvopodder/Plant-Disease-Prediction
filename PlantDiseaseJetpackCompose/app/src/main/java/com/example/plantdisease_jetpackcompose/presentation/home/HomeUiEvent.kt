@@ -6,4 +6,5 @@ sealed class HomeUiEvent {
     data class ImageSelected(val uri: Uri) : HomeUiEvent()
     data class ImageCaptured(val uri: Uri) : HomeUiEvent()
     object ClearError : HomeUiEvent()
+    object Reset : HomeUiEvent()
 }
