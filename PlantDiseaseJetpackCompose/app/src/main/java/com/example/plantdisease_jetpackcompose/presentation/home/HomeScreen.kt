@@ -11,43 +11,16 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CameraAlt
-import androidx.compose.material.icons.filled.Eco
-import androidx.compose.material.icons.filled.Image
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
@@ -64,9 +37,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.plantdisease_jetpackcompose.presentation.components.ErrorBanner
 import com.example.plantdisease_jetpackcompose.presentation.components.PredictionCard
+import com.example.plantdisease_jetpackcompose.ui.theme.GradientColors
 
-
-//optimize ui design - modern ui
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel()
@@ -74,6 +46,7 @@ fun HomeScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var cameraImageUri by remember { mutableStateOf<Uri?>(null) }
+    val isDarkTheme = isSystemInDarkTheme()
 
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -103,6 +76,7 @@ fun HomeScreen(
 
     HomeScreenContent(
         uiState = uiState,
+        isDarkTheme = isDarkTheme,
         onGalleryClick = { galleryLauncher.launch("image/*") },
         onCameraClick = { cameraPermissionLauncher.launch(Manifest.permission.CAMERA) },
         onErrorDismiss = { viewModel.onEvent(HomeUiEvent.ClearError) },
@@ -114,29 +88,28 @@ fun HomeScreen(
 @Composable
 private fun HomeScreenContent(
     uiState: HomeUiState,
+    isDarkTheme: Boolean,
     onGalleryClick: () -> Unit,
     onCameraClick: () -> Unit,
     onErrorDismiss: () -> Unit,
     onReset: () -> Unit
 ) {
+    val backgroundGradient = if (isDarkTheme) {
+        GradientColors.DarkBackgroundGradient
+    } else {
+        GradientColors.LightBackgroundGradient
+    }
+
     Scaffold(
         topBar = {
-            ModernHeader()
+            ModernHeader(isDarkTheme = isDarkTheme)
         },
         containerColor = Color.Transparent
     ) { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Color(0xFFD0F4DE),
-                            Color(0xFFA9DEF9),
-                            Color(0xFFE4C1F9)
-                        )
-                    )
-                )
+                .background(Brush.verticalGradient(backgroundGradient))
         ) {
             Column(
                 modifier = Modifier
@@ -147,10 +120,8 @@ private fun HomeScreenContent(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 if (uiState.selectedImage == null) {
-                    // Info Card
-                    InfoCard()
+                    InfoCard(isDarkTheme = isDarkTheme)
 
-                    // Upload Options
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -160,7 +131,12 @@ private fun HomeScreenContent(
                             icon = Icons.Default.Image,
                             title = "Gallery",
                             description = "Choose photo",
-                            gradient = listOf(Color(0xFF10B981), Color(0xFF059669)),
+                            gradient = if (isDarkTheme) {
+                                GradientColors.DarkPrimaryGradient
+                            } else {
+                                GradientColors.LightPrimaryGradient
+                            },
+                            isDarkTheme = isDarkTheme,
                             onClick = onGalleryClick
                         )
 
@@ -169,17 +145,21 @@ private fun HomeScreenContent(
                             icon = Icons.Default.CameraAlt,
                             title = "Camera",
                             description = "Take photo",
-                            gradient = listOf(Color(0xFF0EA5E9), Color(0xFF0284C7)),
+                            gradient = if (isDarkTheme) {
+                                GradientColors.DarkSecondaryGradient
+                            } else {
+                                GradientColors.LightSecondaryGradient
+                            },
+                            isDarkTheme = isDarkTheme,
                             onClick = onCameraClick
                         )
                     }
 
-                    // Disease Types
-                    DiseaseTypesCard()
+                    DiseaseTypesCard(isDarkTheme = isDarkTheme)
                 } else {
-                    // Image Analysis View
                     ImageAnalysisView(
                         uiState = uiState,
+                        isDarkTheme = isDarkTheme,
                         onErrorDismiss = onErrorDismiss,
                         onGalleryClick = onGalleryClick,
                         onCameraClick = onCameraClick,
@@ -192,10 +172,22 @@ private fun HomeScreenContent(
 }
 
 @Composable
-private fun ModernHeader() {
+private fun ModernHeader(isDarkTheme: Boolean) {
+    val headerGradient = if (isDarkTheme) {
+        GradientColors.DarkHeaderGradient
+    } else {
+        GradientColors.LightHeaderGradient
+    }
+
+    val backgroundColor = if (isDarkTheme) {
+        MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)
+    } else {
+        Color.White.copy(alpha = 0.95f)
+    }
+
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        color = Color.White.copy(alpha = 0.95f),
+        color = backgroundColor,
         shadowElevation = 4.dp
     ) {
         Row(
@@ -208,9 +200,7 @@ private fun ModernHeader() {
                 modifier = Modifier
                     .size(52.dp)
                     .background(
-                        Brush.linearGradient(
-                            colors = listOf(Color(0xFF10B981), Color(0xFF0EA5E9))
-                        ),
+                        Brush.linearGradient(headerGradient),
                         shape = RoundedCornerShape(14.dp)
                     ),
                 contentAlignment = Alignment.Center
@@ -230,13 +220,13 @@ private fun ModernHeader() {
                     text = "Plant Disease Classifier",
                     fontSize = 21.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1F2937)
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = "AI-powered diagnosis",
                     fontSize = 14.sp,
-                    color = Color(0xFF6B7280)
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                 )
             }
         }
@@ -244,10 +234,22 @@ private fun ModernHeader() {
 }
 
 @Composable
-private fun InfoCard() {
+private fun InfoCard(isDarkTheme: Boolean) {
+    val cardColor = if (isDarkTheme) {
+        Color(0xFF1E3A5F)
+    } else {
+        Color(0xFFDCEFFF)
+    }
+
+    val iconColor = if (isDarkTheme) {
+        Color(0xFF60A5FA)
+    } else {
+        Color(0xFF0EA5E9)
+    }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFDCEFFF)),
+        colors = CardDefaults.cardColors(containerColor = cardColor),
         shape = RoundedCornerShape(16.dp)
     ) {
         Row(
@@ -257,21 +259,21 @@ private fun InfoCard() {
             Icon(
                 imageVector = Icons.Default.Info,
                 contentDescription = null,
-                tint = Color(0xFF0EA5E9),
+                tint = iconColor,
                 modifier = Modifier.size(24.dp)
             )
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = "How it works",
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1E3A8A),
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontSize = 15.sp
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = "Upload or capture a leaf photo. Our AI analyzes it and identifies diseases with confidence scores.",
                     fontSize = 13.sp,
-                    color = Color(0xFF1E40AF),
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
                     lineHeight = 18.sp
                 )
             }
@@ -286,6 +288,7 @@ private fun UploadOption(
     title: String,
     description: String,
     gradient: List<Color>,
+    isDarkTheme: Boolean,
     onClick: () -> Unit
 ) {
     var isPressed by remember { mutableStateOf(false) }
@@ -298,7 +301,9 @@ private fun UploadOption(
                 isPressed = true
                 onClick()
             },
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         shape = RoundedCornerShape(20.dp)
     ) {
@@ -331,13 +336,13 @@ private fun UploadOption(
                 text = title,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF1F2937)
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             Text(
                 text = description,
                 fontSize = 12.sp,
-                color = Color(0xFF6B7280)
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
         }
     }
@@ -351,10 +356,12 @@ private fun UploadOption(
 }
 
 @Composable
-private fun DiseaseTypesCard() {
+private fun DiseaseTypesCard(isDarkTheme: Boolean) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         shape = RoundedCornerShape(16.dp)
     ) {
@@ -363,7 +370,7 @@ private fun DiseaseTypesCard() {
                 text = "Detectable Diseases",
                 fontWeight = FontWeight.Bold,
                 fontSize = 16.sp,
-                color = Color(0xFF1F2937)
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -372,11 +379,11 @@ private fun DiseaseTypesCard() {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                DiseaseIcon("B", "Blight", Color(0xFFEF4444))
-                DiseaseIcon("C", "Cob Root", Color(0xFFF59E0B))
-                DiseaseIcon("R", "Rust", Color(0xFFF97316))
-                DiseaseIcon("G", "Gray Spot", Color(0xFF8B5CF6))
-                DiseaseIcon("H", "Healthy", Color(0xFF10B981))
+                DiseaseIcon("B", "Blight", com.example.plantdisease_jetpackcompose.ui.theme.BlightColor)
+                DiseaseIcon("C", "Cob Root", com.example.plantdisease_jetpackcompose.ui.theme.CobRootColor)
+                DiseaseIcon("R", "Rust", com.example.plantdisease_jetpackcompose.ui.theme.RustColor)
+                DiseaseIcon("G", "Gray Spot", com.example.plantdisease_jetpackcompose.ui.theme.GraySpotColor)
+                DiseaseIcon("H", "Healthy", com.example.plantdisease_jetpackcompose.ui.theme.HealthyColor)
             }
         }
     }
@@ -402,7 +409,7 @@ private fun DiseaseIcon(initial: String, name: String, color: Color) {
         Text(
             text = name,
             fontSize = 10.sp,
-            color = Color(0xFF6B7280)
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
         )
     }
 }
@@ -410,6 +417,7 @@ private fun DiseaseIcon(initial: String, name: String, color: Color) {
 @Composable
 private fun ImageAnalysisView(
     uiState: HomeUiState,
+    isDarkTheme: Boolean,
     onErrorDismiss: () -> Unit,
     onGalleryClick: () -> Unit,
     onCameraClick: () -> Unit,
@@ -418,12 +426,13 @@ private fun ImageAnalysisView(
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Card(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            ),
             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
             shape = RoundedCornerShape(24.dp)
         ) {
             Column {
-                // Image with Loading Overlay
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -446,7 +455,9 @@ private fun ImageAnalysisView(
                             contentAlignment = Alignment.Center
                         ) {
                             Card(
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surface
+                                ),
                                 shape = RoundedCornerShape(16.dp)
                             ) {
                                 Column(
@@ -455,19 +466,19 @@ private fun ImageAnalysisView(
                                 ) {
                                     CircularProgressIndicator(
                                         modifier = Modifier.size(48.dp),
-                                        color = Color(0xFF10B981),
+                                        color = MaterialTheme.colorScheme.primary,
                                         strokeWidth = 4.dp
                                     )
                                     Spacer(modifier = Modifier.height(12.dp))
                                     Text(
                                         text = "Analyzing image...",
                                         fontWeight = FontWeight.Medium,
-                                        color = Color(0xFF1F2937)
+                                        color = MaterialTheme.colorScheme.onSurface
                                     )
                                     Text(
                                         text = "AI is processing your plant",
                                         fontSize = 12.sp,
-                                        color = Color(0xFF6B7280)
+                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                                     )
                                 }
                             }
@@ -475,21 +486,19 @@ private fun ImageAnalysisView(
                     }
                 }
 
-                // Results Section
                 if (uiState.predictionResult.isNotEmpty() && !uiState.isLoading) {
                     PredictionCard(uiState)
                 }
 
-                // Error Message
                 uiState.error?.let { error ->
                     ErrorBanner(error = error, onDismiss = onErrorDismiss)
                 }
             }
         }
 
-        // Action Buttons (moved outside the image card)
         if (!uiState.isLoading) {
             ActionButtons(
+                isDarkTheme = isDarkTheme,
                 onTryAnotherClick = {
                     onReset()
                     onGalleryClick()
@@ -505,6 +514,7 @@ private fun ImageAnalysisView(
 
 @Composable
 private fun ActionButtons(
+    isDarkTheme: Boolean,
     onTryAnotherClick: () -> Unit,
     onNewPhotoClick: () -> Unit
 ) {
@@ -512,42 +522,43 @@ private fun ActionButtons(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // Analyze Another Button
         Button(
             onClick = onTryAnotherClick,
             modifier = Modifier
                 .weight(1f)
                 .height(56.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = Color.White
+                containerColor = MaterialTheme.colorScheme.surface
             ),
             elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp),
             shape = RoundedCornerShape(16.dp),
-            border = androidx.compose.foundation.BorderStroke(2.dp, Color(0xFF10B981))
+            border = androidx.compose.foundation.BorderStroke(
+                2.dp,
+                MaterialTheme.colorScheme.primary
+            )
         ) {
             Icon(
                 imageVector = Icons.Default.Refresh,
                 contentDescription = null,
-                tint = Color(0xFF10B981),
+                tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(24.dp)
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = "Try Another",
-                color = Color(0xFF10B981),
+                color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.Bold,
                 fontSize = 15.sp
             )
         }
 
-        // Take New Photo Button
         Button(
             onClick = onNewPhotoClick,
             modifier = Modifier
                 .weight(1f)
                 .height(56.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF10B981)
+                containerColor = MaterialTheme.colorScheme.primary
             ),
             elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp),
             shape = RoundedCornerShape(16.dp)
@@ -555,13 +566,13 @@ private fun ActionButtons(
             Icon(
                 imageVector = Icons.Default.CameraAlt,
                 contentDescription = null,
-                tint = Color.White,
+                tint = MaterialTheme.colorScheme.onPrimary,
                 modifier = Modifier.size(24.dp)
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = "New Photo",
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onPrimary,
                 fontWeight = FontWeight.Bold,
                 fontSize = 15.sp
             )
